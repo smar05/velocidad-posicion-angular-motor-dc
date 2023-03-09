@@ -37,7 +37,8 @@ void setup() {
   motor_direction = 1; // Giro en un sentido
 
   // Configurar las interrupciones del encoder
-  attachInterrupt(digitalPinToInterrupt(encoder_pinA), encoderISR, CHANGE);
+  //attachInterrupt(digitalPinToInterrupt(encoder_pinA), encoderISR, CHANGE);
+  //attachInterrupt(digitalPinToInterrupt(encoder_pinB), encoderISR, CHANGE);
 
   Serial.begin(9600);
   
@@ -53,50 +54,20 @@ void loop() {
     digitalWrite(motor_pin2, LOW);
     return;  
   }
-
-  digitalWrite(4, HIGH);
-  
-  // Leer las señales del encoder
-  /*
-  int encoder_valA = digitalRead(encoder_pinA);
-  int encoder_valB = digitalRead(encoder_pinB);
-  // Determinar la dirección del giro del motor a partir de las señales del encoder
-  if (encoder_valA != encoder_lastA) {
-    if (encoder_valB != encoder_valA) {
-      encoder_count++;
-    } else {
-      encoder_count--;
-    }
-  }
-  encoder_lastA = encoder_valA;
-  encoder_lastB = encoder_valB;
-  */
+    
   // Calcular la velocidad y posición actual del motor
   long current_time = millis();
   long time_diff = current_time - last_time;
-  if (time_diff >= 1) { // Medir la velocidad y posición cada 10 ms
-    float deltaPos = encoderPos - encoderLastPos;
-    motor_speed = deltaPos * radPerCount / time_diff * 1000; // velocidad angular en rad/s    
-    motor_position = encoderPos * radPerCount; // posición angular en rad        
-        
-    // Escribir los datos en el puerto serial
-    /*Serial.print(current_time);
-    Serial.print(",");
-    Serial.print(motor_speed);
-    Serial.print(",");
-    Serial.print(motor_position);
-    Serial.print(",");
-    if (motor_direction == 1) {
-      Serial.println(12);
-    } else if (motor_direction == -1) {
-      Serial.println(-12);
-    } */
+  
+  if (time_diff >= 0.1) { // Medir la velocidad y posición cada 10 ms            
+    // Escribir los datos en el puerto serial    
     int encoderAPin = digitalRead(encoder_pinA);  
     int encoderBPin = digitalRead(encoder_pinB);  
     Serial.print(encoderAPin);
     Serial.print(",");
-    Serial.println(encoderBPin);  
-    encoderLastPos = encoderPos;
+    Serial.println(encoderBPin);    
+    //Serial.print(",");
+    //Serial.println(current_time);      
     last_time = current_time;
   }  
   
@@ -114,6 +85,9 @@ void loop() {
     motor_direction *= -1; // Cambiar la dirección del giro
     cantidad_cambios_giro ++;
     last_time_giro_motor = current_time;
+    digitalWrite(motor_pin1, LOW);
+    digitalWrite(motor_pin2, LOW);    
+
     delay(500); // Esperar un tiempo para evitar cambios bruscos en el motor
   }
 }
