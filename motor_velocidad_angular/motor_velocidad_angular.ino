@@ -4,6 +4,7 @@
 #define ENCODER_B       19 // Pin B del encoder
 #define BUTTON_FORWARD  5 // Giro a la derecha
 #define BUTTON_BACKWARD 4 // Giro a la izquierda
+const int analogPin = A0; // Pin analógico utilizado para la lectura
 const int motor_pin1 = 7;  // Pin de control del motor H-bridge (1A)
 const int motor_pin2 = 6; // Pin de control del motor H-bridge (2A)
 
@@ -29,6 +30,14 @@ bool giro = true;
 int countPV = 0;
 int cambiosGiro = 0;
 int sentidoGiro = 0;
+int pwmValue = 225;
+/*
+ * 124 c = 5.02V
+ * 149 c = 6.02V
+ * 177 c = 7.02V
+ * 202 c = 8.01V
+ * 227 c = 9.01V
+ */
 
 void setup() {
   attachInterrupt(digitalPinToInterrupt(ENCODER_A),Encoder,FALLING);
@@ -47,6 +56,12 @@ void setup() {
 
 }
 
+float inputAnalog() {
+  int ia = analogRead(analogPin);  
+
+  return map(ia, 0, 1023, 0, 5) * 5;
+}
+
 
 void Encoder ()
 {
@@ -54,7 +69,7 @@ void Encoder ()
 
   //if (contador == resolucion) {
     //contador = 0;
-    frecuencia = (1*1000)/ (double) deltaTiempoInterrupcion; //frecuencia de las interrupciones
+    frecuencia = (1000)/ ((double) deltaTiempoInterrupcion); //frecuencia de las interrupciones
   
     tiempoInterrupcionAnterior= tiempoInterrupcionActual;   
   //}  
@@ -63,35 +78,33 @@ void Encoder ()
 
 void loop() {  
 
-  if (cambiosGiro > 4) {
+  /*if (cambiosGiro > 4) {
     digitalWrite(motor_pin1, LOW);
     digitalWrite(motor_pin2, LOW);    
     return;
-  }
+  }*/
 
-  /*// Pulsador hacia adelante
+  // Pulsador hacia adelante
   if(digitalRead(BUTTON_FORWARD)){
-    digitalWrite(motor_pin1, HIGH);
-    digitalWrite(motor_pin2, LOW);    
-        
+    analogWrite(motor_pin1, pwmValue);
+    analogWrite(motor_pin2, 0);            
   }
   else if(digitalRead(BUTTON_BACKWARD)){
-    digitalWrite(motor_pin1, LOW);
-    digitalWrite(motor_pin2, HIGH);    
-    
+    analogWrite(motor_pin1, 0);
+    analogWrite(motor_pin2, pwmValue);    
   }
   else{
-    digitalWrite(motor_pin1, LOW);
-    digitalWrite(motor_pin2, LOW);    
-  }*/
+    analogWrite(motor_pin1, 0);
+    analogWrite(motor_pin2, 0);    
+  }
   //imprimir_cuadratura();
   
   tiempoInterrupcionActual= millis();
   muestreoActual=millis(); //tiempo actual
   deltaMuestreo = (double) muestreoActual - muestreoAnterior; //Diferencia de tiempo (delta de tiempo de muestro)
-  deltaCambioGiro = (double) muestreoActual - cambioGiroTAnterior;  
+  //deltaCambioGiro = (double) muestreoActual - cambioGiroTAnterior;  
 
-  if (deltaCambioGiro >= 5000) {    
+  /*if (deltaCambioGiro >= 5000) {    
 
     if (countPV == 0){
       countPV = 1;    
@@ -125,15 +138,15 @@ void loop() {
       countPV = 0;
       cambiosGiro ++;
     }      
-  }
+  }*/
 
-  if(deltaMuestreo >=15) //Si la diferencia es mayor o igual a un milisegundo
+  if(deltaMuestreo >= 20) //Si la diferencia es mayor o igual a un milisegundo
   {
     float vueltas = contador/resolucion;
     float gradosGirados = vueltas*360; // En grados
 
     // Izquierda
-    if(sentidoGiro == 0){
+    /*if(sentidoGiro == 0){
         if(posicionGrados - gradosGirados <= 0) {
           posicionGrados = 360 - (gradosGirados - posicionGrados);
         } else {
@@ -147,7 +160,7 @@ void loop() {
       } else {
         posicionGrados += gradosGirados;
       }      
-    }      
+    } */     
 
     float velocidad_ang;
     float pos_ang;
@@ -156,13 +169,14 @@ void loop() {
     
     deltaTiempoInterrupcion = tiempoInterrupcionActual -tiempoInterrupcionAnterior;
 
-    rpm = frecuencia*60*vueltas;        
+    rpm = 60 * vueltas * frecuencia;        
 
     velocidad_ang = 2*PI*rpm/60;
-    pos_ang = PI*posicionGrados/180;
+    pos_ang = PI*posicionGrados/180;    
 
-    //Serial.println(velocidad_ang);    
-    //Serial.print(",");
+    Serial.print(velocidad_ang);    
+    Serial.print(",");
+    Serial.println(inputAnalog());
     //Serial.println(pos_ang);
     //Serial.println(velocidad_ang);    
     //Serial.print(",");
