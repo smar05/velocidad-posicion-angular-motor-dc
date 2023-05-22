@@ -1,12 +1,20 @@
 #include <Math.h>
+#include <Encoder.h>
 
 #define ENCODER_A       18 // Pin A del encoder
 #define ENCODER_B       19 // Pin B del encoder
 #define BUTTON_FORWARD  5 // Giro a la derecha
 #define BUTTON_BACKWARD 4 // Giro a la izquierda
+#define ERROR_THRESHOLD 0.1
+#define REFERENCE_SPEED 700
+
+float error = 0;
+
 const int analogPin = A0; // Pin analógico utilizado para la lectura
 const int motor_pin1 = 7;  // Pin de control del motor H-bridge (1A)
 const int motor_pin2 = 6; // Pin de control del motor H-bridge (2A)
+
+Encoder encoder(ENCODER_A, ENCODER_B);
 
 volatile unsigned tiempoInterrupcionActual=0;
 volatile unsigned tiempoInterrupcionAnterior=0;
@@ -40,7 +48,7 @@ int pwmValue = 225;
  */
 
 void setup() {
-  attachInterrupt(digitalPinToInterrupt(ENCODER_A),Encoder,FALLING);
+  //attachInterrupt(digitalPinToInterrupt(ENCODER_A),Encoder,FALLING);
   
   //Encoders como entradas
   pinMode(ENCODER_A, INPUT);
@@ -63,9 +71,12 @@ float inputAnalog() {
 }
 
 
-void Encoder ()
+void encoder_1 ()
 {
-  contador++;
+  //contador++;  
+  contador = encoder.read();
+
+  //Serial.println(contador);
 
   //if (contador == resolucion) {
     //contador = 0;
@@ -75,92 +86,47 @@ void Encoder ()
   //}  
 }
 
+void controlOnOff(float velocidad_ang) {
+  // Calcular el error relativo
+  error = (float)(REFERENCE_SPEED - velocidad_ang);
+  float errorPorcentaje = (float) error / REFERENCE_SPEED;
 
-void loop() {  
+  //Serial.println(errorPorcentaje);
+  
+  // Control On-Off
+  /*if (errorPorcentaje > ERROR_THRESHOLD) {
+    // Aumentar la velocidad del motor
+    analogWrite(motor_pin1, 255);    
+  } else {
+    // Mantener la velocidad actual
+    digitalWrite(motor_pin1, LOW);    
+  } 
+  digitalWrite(motor_pin2, LOW); */
+  // Control On-Off
+  if (errorPorcentaje < -ERROR_THRESHOLD) {
+    // Aumentar la velocidad del motor
+    digitalWrite(motor_pin1, LOW);  
+  } else {
+    // Mantener la velocidad actual
+    analogWrite(motor_pin1, 255);    
+  } 
+  digitalWrite(motor_pin2, LOW); 
+}
 
-  /*if (cambiosGiro > 4) {
-    digitalWrite(motor_pin1, LOW);
-    digitalWrite(motor_pin2, LOW);    
-    return;
-  }*/
 
-  // Pulsador hacia adelante
-  if(digitalRead(BUTTON_FORWARD)){
-    analogWrite(motor_pin1, pwmValue);
-    analogWrite(motor_pin2, 0);            
-  }
-  else if(digitalRead(BUTTON_BACKWARD)){
-    analogWrite(motor_pin1, 0);
-    analogWrite(motor_pin2, pwmValue);    
-  }
-  else{
-    analogWrite(motor_pin1, 0);
-    analogWrite(motor_pin2, 0);    
-  }
-  //imprimir_cuadratura();
+void loop() {    
   
   tiempoInterrupcionActual= millis();
   muestreoActual=millis(); //tiempo actual
   deltaMuestreo = (double) muestreoActual - muestreoAnterior; //Diferencia de tiempo (delta de tiempo de muestro)
-  //deltaCambioGiro = (double) muestreoActual - cambioGiroTAnterior;  
-
-  /*if (deltaCambioGiro >= 5000) {    
-
-    if (countPV == 0){
-      countPV = 1;    
-      pausaAnterior = muestreoActual;      
-    }
-    
-    deltaPausa = (double) muestreoActual - pausaAnterior;    
-
-    digitalWrite(motor_pin1, LOW);
-    digitalWrite(motor_pin2, LOW);    
-
-    if (deltaPausa >= 500) {
-      giro = !giro;           
-  
-      // Pulsador hacia adelante
-      if(giro){
-        sentidoGiro = 0;
-        digitalWrite(motor_pin1, HIGH);
-        digitalWrite(motor_pin2, LOW);    
-            
-      }
-      else if(!giro){
-        sentidoGiro = 1;
-        digitalWrite(motor_pin1, LOW);
-        digitalWrite(motor_pin2, HIGH);    
-        
-      }        
-
-      cambioGiroTAnterior = muestreoActual;
-      pausaAnterior = muestreoActual;      
-      countPV = 0;
-      cambiosGiro ++;
-    }      
-  }*/
+  //deltaCambioGiro = (double) muestreoActual - cambioGiroTAnterior;    
 
   if(deltaMuestreo >= 20) //Si la diferencia es mayor o igual a un milisegundo
   {
+    encoder_1();
+    
     float vueltas = contador/resolucion;
-    float gradosGirados = vueltas*360; // En grados
-
-    // Izquierda
-    /*if(sentidoGiro == 0){
-        if(posicionGrados - gradosGirados <= 0) {
-          posicionGrados = 360 - (gradosGirados - posicionGrados);
-        } else {
-          posicionGrados -= gradosGirados;            
-        }        
-    }
-    // Derecha
-    else if(sentidoGiro == 1){
-      if (posicionGrados + gradosGirados >= 360) {
-        posicionGrados =(posicionGrados + gradosGirados - 360);
-      } else {
-        posicionGrados += gradosGirados;
-      }      
-    } */     
+    float gradosGirados = vueltas*360; // En grados       
 
     float velocidad_ang;
     float pos_ang;
@@ -169,14 +135,28 @@ void loop() {
     
     deltaTiempoInterrupcion = tiempoInterrupcionActual -tiempoInterrupcionAnterior;
 
-    rpm = 60 * vueltas * frecuencia;        
+    rpm = 60 * vueltas * (1000/20);//frecuencia;  
 
     velocidad_ang = 2*PI*rpm/60;
     pos_ang = PI*posicionGrados/180;    
 
+    // Pulsador hacia adelante
+    if(digitalRead(BUTTON_FORWARD)){
+      controlOnOff(velocidad_ang);
+      /*analogWrite(motor_pin1, 255);
+      analogWrite(motor_pin2, 0);    */
+    }  
+    else{
+      analogWrite(motor_pin1, 0);
+      analogWrite(motor_pin2, 0);    
+    }      
+
     Serial.print(velocidad_ang);    
     Serial.print(",");
-    Serial.println(inputAnalog());
+    Serial.println(error);
+    //Serial.print(",");
+    //Serial.println(tiempoInterrupcionActual);
+    //Serial.println(inputAnalog());
     //Serial.println(pos_ang);
     //Serial.println(velocidad_ang);    
     //Serial.print(",");
@@ -190,6 +170,7 @@ void loop() {
     
     muestreoAnterior = muestreoActual;
     contador = 0;
+    encoder.write(0);
   }
 
 }
