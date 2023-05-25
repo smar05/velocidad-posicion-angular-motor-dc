@@ -1,17 +1,17 @@
 #include <Math.h>
 #include <Encoder.h>
 
-#define ENCODER_A       18 // Pin A del encoder
-#define ENCODER_B       19 // Pin B del encoder
+#define ENCODER_A       2 // Pin A del encoder
+#define ENCODER_B       8 // Pin B del encoder
 #define BUTTON_FORWARD  5 // Giro a la derecha
 #define BUTTON_BACKWARD 4 // Giro a la izquierda
 
-const float setpoint = 700.0;  // Velocidad de referencia deseada
-const float kp = 2;          // Ganancia proporcional
+const float setpoint = 400.0;  // Velocidad de referencia deseada
+const float kp = 1;          // Ganancia proporcional
 
 const int analogPin = A0; // Pin analógico utilizado para la lectura
-const int motor_pin1 = 7;  // Pin de control del motor H-bridge (1A)
-const int motor_pin2 = 6; // Pin de control del motor H-bridge (2A)
+const int motor_pin1 = 11;  // Pin de control del motor H-bridge (1A)
+const int motor_pin2 = 3; // Pin de control del motor H-bridge (2A)
 
 float error = 0;
 
@@ -147,6 +147,8 @@ void loop() {
     Serial.print(velocidad_ang);    
     Serial.print(",");
     Serial.println(error);
+    //Serial.print(",");
+    //Serial.println(setpoint);
     /*Serial.print(",");
     Serial.println(inputAnalog());*/
     //Serial.println(pos_ang);
