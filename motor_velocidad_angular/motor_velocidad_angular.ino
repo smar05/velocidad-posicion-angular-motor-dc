@@ -1,8 +1,8 @@
 #include <Math.h>
 #include <Encoder.h>
 
-#define ENCODER_A       18 // Pin A del encoder
-#define ENCODER_B       19 // Pin B del encoder
+#define ENCODER_A       2 // Pin A del encoder
+#define ENCODER_B       8 // Pin B del encoder
 #define BUTTON_FORWARD  5 // Giro a la derecha
 #define BUTTON_BACKWARD 4 // Giro a la izquierda
 #define ERROR_THRESHOLD 0.1
@@ -11,8 +11,8 @@
 float error = 0;
 
 const int analogPin = A0; // Pin analógico utilizado para la lectura
-const int motor_pin1 = 7;  // Pin de control del motor H-bridge (1A)
-const int motor_pin2 = 6; // Pin de control del motor H-bridge (2A)
+const int motor_pin1 = 11;  // Pin de control del motor H-bridge (1A)
+const int motor_pin2 = 3; // Pin de control del motor H-bridge (2A)
 
 Encoder encoder(ENCODER_A, ENCODER_B);
 
@@ -121,7 +121,7 @@ void loop() {
   deltaMuestreo = (double) muestreoActual - muestreoAnterior; //Diferencia de tiempo (delta de tiempo de muestro)
   //deltaCambioGiro = (double) muestreoActual - cambioGiroTAnterior;    
 
-  if(deltaMuestreo >= 20) //Si la diferencia es mayor o igual a un milisegundo
+  if(deltaMuestreo >= 15) //Si la diferencia es mayor o igual a un milisegundo
   {
     encoder_1();
     
